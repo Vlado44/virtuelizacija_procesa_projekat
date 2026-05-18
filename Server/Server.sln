@@ -1,0 +1,61 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.37301.10
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Server", "Server.csproj", "{913CDE11-BD17-40F7-903D-5537CA41A292}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Client", "..\Client\Client.csproj", "{766E34C5-CD1F-4C72-93A5-15699B2B965C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Common", "..\Common\Common.csproj", "{59897395-E751-4BC8-AA17-66639406178F}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "EEGValues", "EEGValues", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
+	ProjectSection(SolutionItems) = preProject
+		..\..\..\..\EEGValues\subject_10_results.csv = ..\..\..\..\EEGValues\subject_10_results.csv
+		..\..\..\..\EEGValues\subject_11_results.csv = ..\..\..\..\EEGValues\subject_11_results.csv
+		..\..\..\..\EEGValues\subject_12_results.csv = ..\..\..\..\EEGValues\subject_12_results.csv
+		..\..\..\..\EEGValues\subject_13_results.csv = ..\..\..\..\EEGValues\subject_13_results.csv
+		..\..\..\..\EEGValues\subject_14_results.csv = ..\..\..\..\EEGValues\subject_14_results.csv
+		..\..\..\..\EEGValues\subject_15_results.csv = ..\..\..\..\EEGValues\subject_15_results.csv
+		..\..\..\..\EEGValues\subject_16_results.csv = ..\..\..\..\EEGValues\subject_16_results.csv
+		..\..\..\..\EEGValues\subject_17_results.csv = ..\..\..\..\EEGValues\subject_17_results.csv
+		..\..\..\..\EEGValues\subject_18_results.csv = ..\..\..\..\EEGValues\subject_18_results.csv
+		..\..\..\..\EEGValues\subject_19_results.csv = ..\..\..\..\EEGValues\subject_19_results.csv
+		..\..\..\..\EEGValues\subject_1_results.csv = ..\..\..\..\EEGValues\subject_1_results.csv
+		..\..\..\..\EEGValues\subject_20_results.csv = ..\..\..\..\EEGValues\subject_20_results.csv
+		..\..\..\..\EEGValues\subject_2_results.csv = ..\..\..\..\EEGValues\subject_2_results.csv
+		..\..\..\..\EEGValues\subject_3_results.csv = ..\..\..\..\EEGValues\subject_3_results.csv
+		..\..\..\..\EEGValues\subject_4_results.csv = ..\..\..\..\EEGValues\subject_4_results.csv
+		..\..\..\..\EEGValues\subject_5_results.csv = ..\..\..\..\EEGValues\subject_5_results.csv
+		..\..\..\..\EEGValues\subject_6_results.csv = ..\..\..\..\EEGValues\subject_6_results.csv
+		..\..\..\..\EEGValues\subject_7_results.csv = ..\..\..\..\EEGValues\subject_7_results.csv
+		..\..\..\..\EEGValues\subject_8_results.csv = ..\..\..\..\EEGValues\subject_8_results.csv
+		..\..\..\..\EEGValues\subject_9_results.csv = ..\..\..\..\EEGValues\subject_9_results.csv
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{913CDE11-BD17-40F7-903D-5537CA41A292}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{913CDE11-BD17-40F7-903D-5537CA41A292}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{913CDE11-BD17-40F7-903D-5537CA41A292}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{913CDE11-BD17-40F7-903D-5537CA41A292}.Release|Any CPU.Build.0 = Release|Any CPU
+		{766E34C5-CD1F-4C72-93A5-15699B2B965C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{766E34C5-CD1F-4C72-93A5-15699B2B965C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{766E34C5-CD1F-4C72-93A5-15699B2B965C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{766E34C5-CD1F-4C72-93A5-15699B2B965C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{59897395-E751-4BC8-AA17-66639406178F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{59897395-E751-4BC8-AA17-66639406178F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{59897395-E751-4BC8-AA17-66639406178F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{59897395-E751-4BC8-AA17-66639406178F}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {88DC9932-BD68-4513-8AFE-F6C1600293A6}
+	EndGlobalSection
+EndGlobal
