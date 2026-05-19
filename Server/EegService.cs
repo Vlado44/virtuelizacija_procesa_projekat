@@ -5,6 +5,8 @@ using System.Text;
 using System.Threading.Tasks;
 using Common;
 using System.ServiceModel;
+using System.Configuration;
+using System.Globalization;
 
 
 namespace Server
@@ -15,6 +17,20 @@ namespace Server
         private int lastRowIndex = -1;
         private int receivedSamples = 0;
         private Meta currentMeta;
+        private readonly int batteryLowThreshold;
+        private readonly int contactQualityMin;
+        private readonly double attentionSpikeThreshold;
+        private readonly double channelOutOfBandPct;
+        private readonly int timestampSkewMaxMs;
+
+        public EegService()
+        {
+            batteryLowThreshold = int.Parse(ConfigurationManager.AppSettings["BatteryLowThreshold"]);
+            contactQualityMin = int.Parse(ConfigurationManager.AppSettings["ContactQualityMin"]);
+            attentionSpikeThreshold = double.Parse(ConfigurationManager.AppSettings["AttentionSpikeThreshold"], CultureInfo.InvariantCulture);
+            channelOutOfBandPct = double.Parse(ConfigurationManager.AppSettings["ChannelOutOfBandPct"], CultureInfo.InvariantCulture);
+            timestampSkewMaxMs = int.Parse(ConfigurationManager.AppSettings["TimestampSkewMaxMs"]);
+        }
 
         public ServiceResponse StartSession(Meta meta)
         {
@@ -50,7 +66,8 @@ namespace Server
             Console.WriteLine("FileName: " + meta.FileName);
             Console.WriteLine("TotalRows: " + meta.TotalRows);
             Console.WriteLine("SchemaVersion: " + meta.SchemaVersion);
-
+            Console.WriteLine("");
+           
             return new ServiceResponse(true, TransferStatus.IN_PROGRESS, "Session started.");
 
         }
@@ -68,7 +85,10 @@ namespace Server
             lastRowIndex = sample.RowIndex;
             receivedSamples++;
 
-            Console.WriteLine("Primljen red: " + sample.RowIndex);
+            if (sample.RowIndex % 1000 == 0)
+            {
+                Console.WriteLine("Primljen red: " + sample.RowIndex);
+            }
 
             return new ServiceResponse(true, TransferStatus.IN_PROGRESS, "Sample received.");
         }
@@ -105,31 +125,85 @@ namespace Server
                 throw new FaultException<FormatFault>(new FormatFault("Timestamp nije validan."));
             }
 
+            ValidateChannel(sample.AF3, "AF3");
+            ValidateChannel(sample.T7, "T7");
+            ValidateChannel(sample.Pz, "Pz");
+            ValidateChannel(sample.T8, "T8");
+            ValidateChannel(sample.AF4, "AF4");
+
+            ValidateMetric(sample.Attention, "Attention");
+            ValidateMetric(sample.Engagement, "Engagement");
+            ValidateMetric(sample.Excitement, "Excitement");
+            ValidateMetric(sample.Interest, "Interest");
+            ValidateMetric(sample.Relaxation, "Relaxation");
+            ValidateMetric(sample.Stress, "Stress");
+
             if (sample.Battery < 0 || sample.Battery > 100)
             {
-                throw new FaultException<ValidationFault>(new ValidationFault("Battery mora biti u opsegu 0-100."));
+                throw new FaultException<ValidationFault>(
+                    new ValidationFault("Battery mora biti u opsegu 0-100."));
             }
 
             if (sample.ContactQuality < 0 || sample.ContactQuality > 100)
             {
-                throw new FaultException<ValidationFault>(new ValidationFault("ContactQuality mora biti u opsegu 0-100."));
+                throw new FaultException<ValidationFault>(
+                    new ValidationFault("ContactQuality mora biti u opsegu 0-100."));
             }
 
-            ValidateNonNegative(sample.Attention, "Attention");
-            ValidateNonNegative(sample.Engagement, "Engagement");
-            ValidateNonNegative(sample.Excitement, "Excitement");
-            ValidateNonNegative(sample.Interest, "Interest");
-            ValidateNonNegative(sample.Relaxation, "Relaxation");
-            ValidateNonNegative(sample.Stress, "Stress");
+            
+            /*
+            if (sample.SlideIndex < 0)
+            {
+                throw new FaultException<ValidationFault>(
+                    new ValidationFault("SlideIndex ne sme biti negativan."));
+            }
+
+            if (sample.SetIndex < 0)
+            {
+                throw new FaultException<ValidationFault>(
+                    new ValidationFault("SetIndex ne sme biti negativan."));
+            }
+            */
+
+            if (sample.Battery < batteryLowThreshold)
+            {
+                Console.WriteLine("Upozorenje: Battery je ispod praga.(20) Vrednost: " + sample.Battery);
+            }
+
+            if (sample.ContactQuality < contactQualityMin)
+            {
+                Console.WriteLine("Upozorenje: ContactQuality je ispod praga.(70) Vrednost: " + sample.ContactQuality);
+            }
         }
 
-        private void ValidateNonNegative(double value, string fieldName)
+        private void ValidateChannel(double value, string fieldName)
         {
+            if (double.IsNaN(value) || double.IsInfinity(value))
+            {
+                throw new FaultException<ValidationFault>(
+                    new ValidationFault(fieldName + " mora biti realan broj."));
+            }
+
             if (value < 0)
             {
-                throw new FaultException<ValidationFault>(new ValidationFault(fieldName + " ne sme biti negativan."));
+                throw new FaultException<ValidationFault>(
+                    new ValidationFault(fieldName + " ne sme biti negativan."));
             }
         }
 
+        private void ValidateMetric(double value, string fieldName)
+        {
+            if (double.IsNaN(value) || double.IsInfinity(value))
+            {
+                throw new FaultException<ValidationFault>(
+                    new ValidationFault(fieldName + " mora biti realan broj."));
+            }
+
+            if (value < 0)
+            {
+                throw new FaultException<ValidationFault>(
+                    new ValidationFault(fieldName + " ne sme biti negativan."));
+            }
+        }
     }
 }
