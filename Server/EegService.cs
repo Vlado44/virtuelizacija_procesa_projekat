@@ -1,12 +1,13 @@
-﻿using System;
+﻿using Common;
+using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Common;
-using System.ServiceModel;
 using System.Configuration;
 using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.ServiceModel;
+using System.Text;
+using System.Threading.Tasks;
 
 
 namespace Server
@@ -17,6 +18,8 @@ namespace Server
         private int lastRowIndex = -1;
         private int receivedSamples = 0;
         private Meta currentMeta;
+        private SessionWriter writer;         
+        private readonly string dataRoot;
         private readonly int batteryLowThreshold;
         private readonly int contactQualityMin;
         private readonly double attentionSpikeThreshold;
@@ -30,6 +33,10 @@ namespace Server
             attentionSpikeThreshold = double.Parse(ConfigurationManager.AppSettings["AttentionSpikeThreshold"], CultureInfo.InvariantCulture);
             channelOutOfBandPct = double.Parse(ConfigurationManager.AppSettings["ChannelOutOfBandPct"], CultureInfo.InvariantCulture);
             timestampSkewMaxMs = int.Parse(ConfigurationManager.AppSettings["TimestampSkewMaxMs"]);
+
+            dataRoot = ConfigurationManager.AppSettings["DataRoot"];
+            if (string.IsNullOrEmpty(dataRoot))
+                dataRoot = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data");
         }
 
         public ServiceResponse StartSession(Meta meta)
@@ -61,6 +68,9 @@ namespace Server
             receivedSamples = 0;
             currentMeta = meta;
 
+            CloseWriter();   
+            writer = new SessionWriter(dataRoot, meta.ParticipantId, DateTime.Now);
+
             Console.WriteLine("Start sesije:");
             Console.WriteLine("ParticipantId: " + meta.ParticipantId);
             Console.WriteLine("FileName: " + meta.FileName);
@@ -82,6 +92,8 @@ namespace Server
 
             ValidateSample(sample);
 
+            writer.WriteSample(sample);
+
             lastRowIndex = sample.RowIndex;
             receivedSamples++;
 
@@ -101,6 +113,8 @@ namespace Server
             }
 
             sessionStarted = false;
+
+            CloseWriter();
 
             Console.WriteLine("Završena sesija.");
             Console.WriteLine("Ukupno primljenih uzoraka: " + receivedSamples);
@@ -205,5 +219,14 @@ namespace Server
                     new ValidationFault(fieldName + " ne sme biti negativan."));
             }
         }
+
+        private void CloseWriter()
+        {
+            if (writer != null)
+            {
+                writer.Dispose();
+                writer = null;
+            }
+        }   
     }
 }
