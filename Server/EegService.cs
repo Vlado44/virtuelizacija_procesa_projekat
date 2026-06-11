@@ -76,6 +76,7 @@ namespace Server
             Console.WriteLine("FileName: " + meta.FileName);
             Console.WriteLine("TotalRows: " + meta.TotalRows);
             Console.WriteLine("SchemaVersion: " + meta.SchemaVersion);
+            Console.WriteLine("Prenos u toku...");
             Console.WriteLine("");
            
             return new ServiceResponse(true, TransferStatus.IN_PROGRESS, "Session started.");
@@ -99,7 +100,7 @@ namespace Server
 
             if (sample.RowIndex % 1000 == 0)
             {
-                Console.WriteLine("Primljen red: " + sample.RowIndex);
+                Console.WriteLine("Prenos u toku... ; Primljeno uzoraka: "+ receivedSamples);
             }
 
             return new ServiceResponse(true, TransferStatus.IN_PROGRESS, "Sample received.");
