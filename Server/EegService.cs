@@ -92,6 +92,18 @@ namespace Server
                     new ValidationFault("Sesija nije pokrenuta. Prvo pozovi StartSession."));
             }
 
+            if (sample == null)
+                throw new FaultException<ValidationFault>(new ValidationFault("Sample ne sme biti null."));
+
+            if (sample.RowIndex <= lastRowIndex)
+            {
+                RaiseWarning(WarningType.DuplicateRow, sample,
+                    "RowIndex ne raste monotono (RowIndex=" + sample.RowIndex +
+                    ", prethodni=" + lastRowIndex + ")");
+
+                return new ServiceResponse(true, TransferStatus.IN_PROGRESS, "Duplicate row skipped.");
+            }
+
             ValidateSample(sample);
 
             writer.WriteSample(sample);
@@ -102,11 +114,19 @@ namespace Server
             EegPublisher.Instance.RaiseSampleReceived(
             new SampleReceivedEventArgs(currentMeta.ParticipantId, sample.RowIndex, receivedSamples));
 
+            if (sample.Battery < batteryLowThreshold)
+                RaiseWarning(WarningType.LowBattery, sample,
+                    "Nizak nivo baterije (Battery=" + sample.Battery + ")");
+
+            if (sample.ContactQuality < contactQualityMin)
+                RaiseWarning(WarningType.PoorContact, sample,
+                    "Los kvalitet kontakta (ContactQuality=" + sample.ContactQuality + ")");
+
             RunAnalytics(sample);          
 
             prevAttention = sample.Attention;   
             prevEngagement = sample.Engagement; 
-            hasPrev = true;                    
+            hasPrev = true;              
 
             return new ServiceResponse(true, TransferStatus.IN_PROGRESS, "Sample received.");
         }
@@ -137,11 +157,6 @@ namespace Server
                 throw new FaultException<ValidationFault>(new ValidationFault("Sample ne sme biti null."));
             }
 
-            if (sample.RowIndex <= lastRowIndex)
-            {
-                throw new FaultException<ValidationFault>(new ValidationFault("RowIndex mora monotono da raste."));
-            }
-
             if (sample.Timestamp == DateTime.MinValue)
             {
                 throw new FaultException<FormatFault>(new FormatFault("Timestamp nije validan."));
@@ -170,31 +185,6 @@ namespace Server
             {
                 throw new FaultException<ValidationFault>(
                     new ValidationFault("ContactQuality mora biti u opsegu 0-100."));
-            }
-
-            
-            /*
-            if (sample.SlideIndex < 0)
-            {
-                throw new FaultException<ValidationFault>(
-                    new ValidationFault("SlideIndex ne sme biti negativan."));
-            }
-
-            if (sample.SetIndex < 0)
-            {
-                throw new FaultException<ValidationFault>(
-                    new ValidationFault("SetIndex ne sme biti negativan."));
-            }
-            */
-
-            if (sample.Battery < batteryLowThreshold)
-            {
-                Console.WriteLine("Upozorenje: Battery je ispod praga.(20) Vrednost: " + sample.Battery);
-            }
-
-            if (sample.ContactQuality < contactQualityMin)
-            {
-                Console.WriteLine("Upozorenje: ContactQuality je ispod praga.(70) Vrednost: " + sample.ContactQuality);
             }
         }
 
@@ -240,7 +230,7 @@ namespace Server
         private void RunAnalytics(Sample sample)
         {
             if (!hasPrev)
-                return;   
+                return;
 
             double dAttention = sample.Attention - prevAttention;
             double dEngagement = sample.Engagement - prevEngagement;
@@ -252,9 +242,7 @@ namespace Server
                 string poruka = "Nagla promena paznje (" + smer + " " +
                                 Math.Abs(dAttention).ToString("F3", CultureInfo.InvariantCulture) + ")";
 
-                EegPublisher.Instance.RaiseWarning(new WarningEventArgs(
-                    WarningType.AttentionSpike, currentMeta.ParticipantId, sample.Timestamp,
-                    sample.RowIndex, poruka, prevAttention, sample.Attention));
+                RaiseWarning(WarningType.AttentionSpike, sample, poruka, prevAttention, sample.Attention);
             }
 
             // isto pravilo: pad angažovanosti
@@ -263,10 +251,19 @@ namespace Server
                 string poruka = "Nagli pad angazovanosti (pad " +
                                 Math.Abs(dEngagement).ToString("F3", CultureInfo.InvariantCulture) + ")";
 
-                EegPublisher.Instance.RaiseWarning(new WarningEventArgs(
-                    WarningType.EngagementDrop, currentMeta.ParticipantId, sample.Timestamp,
-                    sample.RowIndex, poruka, prevEngagement, sample.Engagement));
+                RaiseWarning(WarningType.EngagementDrop, sample, poruka, prevEngagement, sample.Engagement);
             }
+        }
+
+        private void RaiseWarning(WarningType type, Sample sample, string message,
+                          double? before = null, double? after = null)
+        {
+            EegPublisher.Instance.RaiseWarning(new WarningEventArgs(
+                type, currentMeta.ParticipantId, sample.Timestamp,
+                sample.RowIndex, message, before, after));
+
+            if (writer != null)
+                writer.WriteReject(type + ": " + message, SessionWriter.BuildRawRow(sample));
         }
     }
 }
