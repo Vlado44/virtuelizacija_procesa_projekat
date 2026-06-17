@@ -71,14 +71,9 @@ namespace Server
             CloseWriter();   
             writer = new SessionWriter(dataRoot, meta.ParticipantId, DateTime.Now);
 
-            Console.WriteLine("Start sesije:");
-            Console.WriteLine("ParticipantId: " + meta.ParticipantId);
-            Console.WriteLine("FileName: " + meta.FileName);
-            Console.WriteLine("TotalRows: " + meta.TotalRows);
-            Console.WriteLine("SchemaVersion: " + meta.SchemaVersion);
-            Console.WriteLine("Prenos u toku...");
-            Console.WriteLine("");
-           
+            EegPublisher.Instance.RaiseTransferStarted(
+            new TransferStartedEventArgs(meta.ParticipantId, meta.FileName, meta.TotalRows, DateTime.Now));
+
             return new ServiceResponse(true, TransferStatus.IN_PROGRESS, "Session started.");
 
         }
@@ -98,10 +93,8 @@ namespace Server
             lastRowIndex = sample.RowIndex;
             receivedSamples++;
 
-            if (sample.RowIndex % 1000 == 0)
-            {
-                Console.WriteLine("Prenos u toku... ; Primljeno uzoraka: "+ receivedSamples);
-            }
+            EegPublisher.Instance.RaiseSampleReceived(
+            new SampleReceivedEventArgs(currentMeta.ParticipantId, sample.RowIndex, receivedSamples));
 
             return new ServiceResponse(true, TransferStatus.IN_PROGRESS, "Sample received.");
         }
@@ -115,10 +108,12 @@ namespace Server
 
             sessionStarted = false;
 
+            EegPublisher.Instance.RaiseTransferCompleted(
+            new TransferCompletedEventArgs(currentMeta.ParticipantId, receivedSamples, DateTime.Now));
+
             CloseWriter();
 
-            Console.WriteLine("Završena sesija.");
-            Console.WriteLine("Ukupno primljenih uzoraka: " + receivedSamples);
+           
 
             return new ServiceResponse(true, TransferStatus.COMPLETED, "Session completed.");
         }

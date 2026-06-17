@@ -11,6 +11,9 @@ namespace Server
     {
         static void Main(string[] args)
         {
+
+            new ConsoleSubscriber(EegPublisher.Instance);
+
             using (ServiceHost host = new ServiceHost(typeof(EegService)))
             {
                 host.Open();
