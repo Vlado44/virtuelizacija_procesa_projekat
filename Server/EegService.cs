@@ -17,6 +17,9 @@ namespace Server
         private bool sessionStarted = false;
         private int lastRowIndex = -1;
         private int receivedSamples = 0;
+        private bool hasPrev = false;
+        private double prevAttention = 0;
+        private double prevEngagement = 0;
         private Meta currentMeta;
         private SessionWriter writer;         
         private readonly string dataRoot;
@@ -25,6 +28,7 @@ namespace Server
         private readonly double attentionSpikeThreshold;
         private readonly double channelOutOfBandPct;
         private readonly int timestampSkewMaxMs;
+        private readonly double engagementDropThreshold;
 
         public EegService()
         {
@@ -33,6 +37,8 @@ namespace Server
             attentionSpikeThreshold = double.Parse(ConfigurationManager.AppSettings["AttentionSpikeThreshold"], CultureInfo.InvariantCulture);
             channelOutOfBandPct = double.Parse(ConfigurationManager.AppSettings["ChannelOutOfBandPct"], CultureInfo.InvariantCulture);
             timestampSkewMaxMs = int.Parse(ConfigurationManager.AppSettings["TimestampSkewMaxMs"]);
+            engagementDropThreshold = double.Parse(
+            ConfigurationManager.AppSettings["EngagementDropThreshold"], CultureInfo.InvariantCulture);
 
             dataRoot = ConfigurationManager.AppSettings["DataRoot"];
             if (string.IsNullOrEmpty(dataRoot))
@@ -95,6 +101,12 @@ namespace Server
 
             EegPublisher.Instance.RaiseSampleReceived(
             new SampleReceivedEventArgs(currentMeta.ParticipantId, sample.RowIndex, receivedSamples));
+
+            RunAnalytics(sample);          
+
+            prevAttention = sample.Attention;   
+            prevEngagement = sample.Engagement; 
+            hasPrev = true;                    
 
             return new ServiceResponse(true, TransferStatus.IN_PROGRESS, "Sample received.");
         }
@@ -223,6 +235,38 @@ namespace Server
                 writer.Dispose();
                 writer = null;
             }
-        }   
+        }
+
+        private void RunAnalytics(Sample sample)
+        {
+            if (!hasPrev)
+                return;   
+
+            double dAttention = sample.Attention - prevAttention;
+            double dEngagement = sample.Engagement - prevEngagement;
+
+            // |ΔAttention| > prag -> AttentionSpike 
+            if (Math.Abs(dAttention) > attentionSpikeThreshold)
+            {
+                string smer = dAttention > 0 ? "porast" : "pad";
+                string poruka = "Nagla promena paznje (" + smer + " " +
+                                Math.Abs(dAttention).ToString("F3", CultureInfo.InvariantCulture) + ")";
+
+                EegPublisher.Instance.RaiseWarning(new WarningEventArgs(
+                    WarningType.AttentionSpike, currentMeta.ParticipantId, sample.Timestamp,
+                    sample.RowIndex, poruka, prevAttention, sample.Attention));
+            }
+
+            // isto pravilo: pad angažovanosti
+            if (dEngagement < -engagementDropThreshold)
+            {
+                string poruka = "Nagli pad angazovanosti (pad " +
+                                Math.Abs(dEngagement).ToString("F3", CultureInfo.InvariantCulture) + ")";
+
+                EegPublisher.Instance.RaiseWarning(new WarningEventArgs(
+                    WarningType.EngagementDrop, currentMeta.ParticipantId, sample.Timestamp,
+                    sample.RowIndex, poruka, prevEngagement, sample.Engagement));
+            }
+        }
     }
 }
